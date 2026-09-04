@@ -42,28 +42,28 @@ export async function POST(request: NextRequest) {
 
     if (authData?.user) {
       user = await SupabaseDatabaseService.getUserById(authData.user.id);
-      const isMarcus = email.trim().toLowerCase() === 'marcus.vance@solargrid.io' || email.trim().toLowerCase().includes('admin');
+      const isAdminUser = email.trim().toLowerCase() === 'admin@gmail.com' || email.trim().toLowerCase() === 'marcus.vance@solargrid.io' || email.trim().toLowerCase().includes('admin');
       if (!user) {
         user = await SupabaseDatabaseService.createUser({
           id: authData.user.id,
           email: authData.user.email || email,
-          name: authData.user.user_metadata?.name || (isMarcus ? 'Marcus Vance' : 'Solar Member'),
-          role: isMarcus ? 'SUPER_ADMIN' : 'USER',
+          name: authData.user.user_metadata?.name || (isAdminUser ? (email.includes('admin@gmail') ? 'Super Admin' : 'Marcus Vance') : 'Solar Member'),
+          role: isAdminUser ? 'SUPER_ADMIN' : 'USER',
         });
-      } else if (isMarcus && user.role !== 'SUPER_ADMIN') {
+      } else if (isAdminUser && user.role !== 'SUPER_ADMIN') {
         user = await SupabaseDatabaseService.updateUser(user.id, { role: 'SUPER_ADMIN' });
       }
     } else {
       // Fallback: Check registered users in database
       const dbUser = await SupabaseDatabaseService.getUserByEmail(email);
-      const isMarcus = email.trim().toLowerCase() === 'marcus.vance@solargrid.io' || email.trim().toLowerCase().includes('admin');
-      const validAdminPass = password === 'adminPass123' || password === 'SolarGrid2026!';
+      const isAdminUser = email.trim().toLowerCase() === 'admin@gmail.com' || email.trim().toLowerCase() === 'marcus.vance@solargrid.io' || email.trim().toLowerCase().includes('admin');
+      const validAdminPass = password === 'admin123@' || password === 'adminPass123' || password === 'SolarGrid2026!';
       const validUserPass = password === 'password123' || password === 'Password123!' || password === 'SolarGrid2026!';
 
       if (dbUser) {
-        if (isMarcus && validAdminPass) {
+        if (isAdminUser && validAdminPass) {
           user = dbUser;
-        } else if (!isMarcus && validUserPass) {
+        } else if (!isAdminUser && validUserPass) {
           user = dbUser;
         }
       }

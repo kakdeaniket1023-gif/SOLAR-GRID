@@ -102,12 +102,19 @@ export async function updateSession(request: NextRequest) {
 
     role = role || (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
 
-    // Fallback check for admin user IDs
-    if (!role && cookieUserId) {
+    // Fallback check for admin user IDs or admin email
+    if (!role) {
+      const email = user.email?.toLowerCase();
       if (
-        cookieUserId === 'usr-admin-marcus' ||
-        cookieUserId === '00000000-0000-0000-0000-000000000001' ||
-        cookieUserId.includes('admin')
+        email === 'admin@gmail.com' ||
+        email === 'marcus.vance@solargrid.io' ||
+        email?.includes('admin') ||
+        (cookieUserId && (
+          cookieUserId === 'usr-admin-marcus' ||
+          cookieUserId === 'usr-admin-root' ||
+          cookieUserId === '00000000-0000-0000-0000-000000000001' ||
+          cookieUserId.includes('admin')
+        ))
       ) {
         role = 'SUPER_ADMIN';
       }

@@ -22,7 +22,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   },
 });
 
-async function getOrCreateAuthUser(email: string, password: string, name: string): Promise<string> {
+async function getOrCreateAuthUser(email: string, password: string, name: string, role: string = 'USER'): Promise<string> {
   const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
   if (listError) {
     throw new Error(`Failed to list users: ${listError.message}`);
@@ -35,7 +35,8 @@ async function getOrCreateAuthUser(email: string, password: string, name: string
     const { error: updateError } = await supabase.auth.admin.updateUserById(existing.id, {
       password,
       email_confirm: true,
-      user_metadata: { name },
+      user_metadata: { name, role },
+      app_metadata: { role },
     });
     if (updateError) {
       throw new Error(`Failed to update password for ${email}: ${updateError.message}`);
@@ -47,7 +48,8 @@ async function getOrCreateAuthUser(email: string, password: string, name: string
       email,
       password,
       email_confirm: true,
-      user_metadata: { name },
+      user_metadata: { name, role },
+      app_metadata: { role },
     });
     if (createError || !createData.user) {
       throw new Error(`Failed to create user ${email}: ${createError?.message}`);
@@ -58,14 +60,60 @@ async function getOrCreateAuthUser(email: string, password: string, name: string
 
 async function seed() {
   console.log('--- Starting SolarGrid Supabase Demo User Seeding ---');
+  const bcrypt = require('bcryptjs');
+
+  // 0. Seed Primary Super Admin (admin@gmail.com)
+  const rootEmail = 'admin@gmail.com';
+  const rootPass = 'admin123@';
+  const rootName = 'Super Admin';
+  const rootId = await getOrCreateAuthUser(rootEmail, rootPass, rootName, 'SUPER_ADMIN');
+
+  const { error: rootUserErr } = await supabase.from('users').upsert(
+    {
+      id: rootId,
+      email: rootEmail,
+      name: rootName,
+      phone: '+1 (555) 019-0001',
+      country: 'United States',
+      role: 'SUPER_ADMIN',
+      status: 'ACTIVE',
+      referral_code: 'SG-ADMIN-ROOT',
+      sponsor_id: null,
+      leadership_level: 'SOLAR_DIRECTOR',
+      points: 100,
+      available_balance: 50000.0,
+      total_earned: 100000.0,
+      password_hash: bcrypt.hashSync(rootPass, 10),
+      failed_login_attempts: 0,
+      locked_until: null,
+    },
+    { onConflict: 'id' }
+  );
+  if (rootUserErr) throw rootUserErr;
+
+  const { error: rootProfErr } = await supabase.from('profiles').upsert(
+    {
+      user_id: rootId,
+      bio: 'Root System Administrator for SolarGrid Infrastructure.',
+      wallet_address: 'TX9d823489247823748293748239748923',
+      wallet_network: 'USDT-TRC20',
+      wallet_verified: true,
+      preferred_currency: 'USDT',
+      two_factor_enabled: true,
+      email_notifications: true,
+      push_notifications: true,
+      telegram_handle: '@admin_solargrid',
+    },
+    { onConflict: 'user_id' }
+  );
+  if (rootProfErr) throw rootProfErr;
+  console.log(`✓ Super Admin seeded: ${rootEmail} (${rootId})`);
 
   // 1. Seed Marcus Vance (SUPER_ADMIN)
   const marcusEmail = 'marcus.vance@solargrid.io';
   const marcusPass = 'adminPass123';
   const marcusName = 'Marcus Vance';
-  const marcusId = await getOrCreateAuthUser(marcusEmail, marcusPass, marcusName);
-
-  const bcrypt = require('bcryptjs');
+  const marcusId = await getOrCreateAuthUser(marcusEmail, marcusPass, marcusName, 'SUPER_ADMIN');
 
   const { error: marcusUserErr } = await supabase.from('users').upsert(
     {
