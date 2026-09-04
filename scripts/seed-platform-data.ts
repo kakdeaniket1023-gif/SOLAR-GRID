@@ -22,7 +22,7 @@ async function main() {
     if (!existing || existing.length === 0) {
       const { error } = await supabase.from('solar_projects').insert({
         name: proj.name,
-        description: proj.description,
+        description: (proj as any).description || 'Clean energy solar installation',
         location: proj.location,
         total_capacity_mw: proj.totalCapacityMw,
         current_output_mw: proj.currentOutputMw,
