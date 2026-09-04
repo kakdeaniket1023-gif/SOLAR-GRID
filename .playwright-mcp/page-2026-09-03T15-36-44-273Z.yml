@@ -1,0 +1,26 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - generic [ref=f3e3]:
+      - link "SolarGrid" [ref=f3e4] [cursor=pointer]:
+        - /url: /
+      - heading "Authenticate to Infrastructure" [level=2] [ref=f3e13]
+      - paragraph [ref=f3e14]: Access solar telemetry, earnings ledger, and community dashboard.
+    - generic [ref=f3e16]:
+      - generic [ref=f3e17]:
+        - generic [ref=f3e18]:
+          - generic [ref=f3e19]: Email Address
+          - textbox "Email Address" [ref=f3e21]:
+            - /placeholder: name@solargrid.io
+            - text: sarah.jenkins@solargrid.io
+        - generic [ref=f3e22]:
+          - generic [ref=f3e23]:
+            - generic [ref=f3e24]: Password
+            - link "Forgot password?" [ref=f3e25] [cursor=pointer]:
+              - /url: /forgot-password
+          - textbox "••••••••" [ref=f3e28]: SolarGrid2026!
+        - button "Sign In to Infrastructure" [ref=f3e29] [cursor=pointer]
+      - generic [ref=f3e32]:
+        - text: Don't have an active account?
+        - link "Register Here" [ref=f3e33] [cursor=pointer]:
+          - /url: /signup
+  - alert [ref=f3e34]

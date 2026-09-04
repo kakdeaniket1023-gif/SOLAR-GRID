@@ -1,0 +1,25 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - generic [ref=f5e3]:
+      - link "SolarGrid" [ref=f5e4] [cursor=pointer]:
+        - /url: /
+      - heading "Authenticate to Infrastructure" [level=2] [ref=f5e13]
+      - paragraph [ref=f5e14]: Access solar telemetry, earnings ledger, and community dashboard.
+    - generic [ref=f5e16]:
+      - generic [ref=f5e17]:
+        - generic [ref=f5e18]:
+          - generic [ref=f5e19]: Email Address
+          - textbox "Email Address" [ref=f5e21]:
+            - /placeholder: name@solargrid.io
+        - generic [ref=f5e22]:
+          - generic [ref=f5e23]:
+            - generic [ref=f5e24]: Password
+            - link "Forgot password?" [ref=f5e25] [cursor=pointer]:
+              - /url: /forgot-password
+          - textbox "••••••••" [ref=f5e28]
+        - button "Sign In to Infrastructure" [ref=f5e29] [cursor=pointer]
+      - generic [ref=f5e32]:
+        - text: Don't have an active account?
+        - link "Register Here" [ref=f5e33] [cursor=pointer]:
+          - /url: /signup
+  - alert [ref=f5e34]

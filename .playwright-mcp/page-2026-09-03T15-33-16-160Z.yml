@@ -1,0 +1,35 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - generic [ref=f2e3]:
+      - link "SolarGrid" [ref=f2e4] [cursor=pointer]:
+        - /url: /
+      - heading "Create Contributor Account" [level=2] [ref=f2e13]
+      - paragraph [ref=f2e14]: Get initialized with 70 Points (100% earning power) and activate clean-energy capacity.
+    - generic [ref=f2e16]:
+      - generic [ref=f2e17]:
+        - generic [ref=f2e18]:
+          - generic [ref=f2e19]: Full Legal Name
+          - textbox "Full Legal Name" [ref=f2e21]:
+            - /placeholder: e.g. Julian Mercer
+        - generic [ref=f2e22]:
+          - generic [ref=f2e23]: Email Address
+          - textbox "Email Address" [ref=f2e25]:
+            - /placeholder: julian.mercer@gridmail.net
+        - generic [ref=f2e26]:
+          - generic [ref=f2e27]: Password
+          - textbox "Password" [ref=f2e29]:
+            - /placeholder: •••••••• (min 6 chars)
+        - generic [ref=f2e30]:
+          - generic [ref=f2e31]: Confirm Password
+          - textbox "Confirm Password" [ref=f2e33]:
+            - /placeholder: ••••••••
+        - generic [ref=f2e34]:
+          - generic [ref=f2e35]: Sponsor Referral Code (Optional)
+          - textbox "e.g. SOLAR-SARAH-99" [ref=f2e42]
+        - generic [ref=f2e43]: By creating an account, you agree to the 60-day (~43 working days) generation cycle and 70-point baseline governance rules.
+        - button "Complete Registration" [ref=f2e44] [cursor=pointer]
+      - generic [ref=f2e47]:
+        - text: Already have an active account?
+        - link "Sign In" [ref=f2e48] [cursor=pointer]:
+          - /url: /login
+  - alert [ref=f2e49]

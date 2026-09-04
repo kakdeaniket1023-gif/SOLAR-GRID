@@ -1,0 +1,184 @@
+- generic [active] [ref=f9e1]:
+  - generic [ref=f9e2]:
+    - complementary [ref=f9e3]:
+      - link "SolarGrid SOLAR INFRASTRUCTURE" [ref=f9e5] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=f9e13]:
+          - generic [ref=f9e14]: SolarGrid
+          - generic [ref=f9e15]: SOLAR INFRASTRUCTURE
+      - generic [ref=f9e17]:
+        - generic [ref=f9e18]:
+          - generic [ref=f9e19]: Available Balance
+          - generic [ref=f9e20]: USDT
+        - generic [ref=f9e21]: $1250.00
+        - generic [ref=f9e22]:
+          - link "Recharge" [ref=f9e23] [cursor=pointer]:
+            - /url: /dashboard/recharge
+          - link "Withdraw" [ref=f9e26] [cursor=pointer]:
+            - /url: /dashboard/withdrawal
+      - navigation [ref=f9e29]:
+        - generic [ref=f9e30]: Main Navigation
+        - link "Home" [ref=f9e31] [cursor=pointer]:
+          - /url: /dashboard
+        - link "Panels" [ref=f9e39] [cursor=pointer]:
+          - /url: /dashboard/panels
+        - link "Start Panel" [ref=f9e46] [cursor=pointer]:
+          - /url: /dashboard/start-panel
+        - link "Invite" [ref=f9e51] [cursor=pointer]:
+          - /url: /dashboard/invite
+        - link "Profile" [ref=f9e60] [cursor=pointer]:
+          - /url: /dashboard/profile
+      - generic [ref=f9e66]:
+        - generic [ref=f9e67]:
+          - generic [ref=f9e68]:
+            - generic [ref=f9e69]: SA
+            - generic [ref=f9e70]:
+              - generic [ref=f9e71]: Sarah Jenkins
+              - generic [ref=f9e72]: sarah.jenkins@solargrid.io
+          - generic [ref=f9e73]: 100 pts
+        - button "Sign Out" [ref=f9e78] [cursor=pointer]
+    - generic [ref=f9e83]:
+      - banner [ref=f9e85]:
+        - generic [ref=f9e87]:
+          - generic [ref=f9e88]: ● LIVE
+          - generic [ref=f9e89]: Photovoltaic Infrastructure Platform
+        - generic [ref=f9e247]:
+          - link "Notifications" [ref=f9e248] [cursor=pointer]:
+            - /url: /dashboard/notifications
+          - link "User Profile" [ref=f9e252] [cursor=pointer]:
+            - /url: /dashboard/profile
+            - generic [ref=f9e253]: SA
+      - main [ref=f9e90]:
+        - generic [ref=f9e91]:
+          - generic [ref=f9e92]:
+            - generic [ref=f9e93]:
+              - heading "Solar Generation Panels" [level=1] [ref=f9e94]
+              - paragraph [ref=f9e95]: Choose your photovoltaic panel capacity (P1 to P6). Direct daily USDT revenue.
+            - generic [ref=f9e96]:
+              - generic [ref=f9e97]:
+                - text: "Available:"
+                - strong [ref=f9e98]: $1250.00 USDT
+              - link "Recharge" [ref=f9e99] [cursor=pointer]:
+                - /url: /dashboard/recharge
+          - generic [ref=f9e103]:
+            - generic [ref=f9e104]:
+              - generic [ref=f9e105]:
+                - img "P1 Solar Panel" [ref=f9e254]
+                - generic [ref=f9e107]: P1 Solar Panel • 1 KW
+              - generic [ref=f9e108]:
+                - generic [ref=f9e109]:
+                  - heading "P1 Solar Panel" [level=2] [ref=f9e255]
+                  - generic [ref=f9e111]:
+                    - generic [ref=f9e112]: EQUIPMENT PRICE
+                    - generic [ref=f9e113]: $35 USDT
+                - generic [ref=f9e114]:
+                  - generic [ref=f9e115]:
+                    - generic [ref=f9e116]: DAILY REVENUE
+                    - strong [ref=f9e117]: +0.80 USDT
+                  - generic [ref=f9e118]:
+                    - generic [ref=f9e119]: OWNED QUANTITY
+                    - strong [ref=f9e120]: 0 units
+              - button "Buy P1 Solar Panel ($35 USDT)" [ref=f9e256] [cursor=pointer]
+            - generic [ref=f9e125]:
+              - generic [ref=f9e126]:
+                - img "P2 Solar Panel" [ref=f9e260]
+                - generic [ref=f9e128]: P2 Solar Panel • 5 KW
+              - generic [ref=f9e129]:
+                - generic [ref=f9e130]:
+                  - heading "P2 Solar Panel" [level=2] [ref=f9e261]
+                  - generic [ref=f9e132]:
+                    - generic [ref=f9e133]: EQUIPMENT PRICE
+                    - generic [ref=f9e134]: $150 USDT
+                - generic [ref=f9e135]:
+                  - generic [ref=f9e136]:
+                    - generic [ref=f9e137]: DAILY REVENUE
+                    - strong [ref=f9e138]: +3.40 USDT
+                  - generic [ref=f9e139]:
+                    - generic [ref=f9e140]: OWNED QUANTITY
+                    - strong [ref=f9e141]: 0 units
+              - button "Buy P2 Solar Panel ($150 USDT)" [ref=f9e262] [cursor=pointer]
+            - generic [ref=f9e146]:
+              - generic [ref=f9e147]:
+                - img "P3 Solar Panel" [ref=f9e263]
+                - generic [ref=f9e149]: P3 Solar Panel • 10 KW
+              - generic [ref=f9e150]:
+                - generic [ref=f9e151]:
+                  - heading "P3 Solar Panel" [level=2] [ref=f9e264]
+                  - generic [ref=f9e153]:
+                    - generic [ref=f9e154]: EQUIPMENT PRICE
+                    - generic [ref=f9e155]: $300 USDT
+                - generic [ref=f9e156]:
+                  - generic [ref=f9e157]:
+                    - generic [ref=f9e158]: DAILY REVENUE
+                    - strong [ref=f9e159]: +7.20 USDT
+                  - generic [ref=f9e160]:
+                    - generic [ref=f9e161]: OWNED QUANTITY
+                    - strong [ref=f9e162]: 0 units
+              - button "Buy P3 Solar Panel ($300 USDT)" [ref=f9e265] [cursor=pointer]
+            - generic [ref=f9e167]:
+              - generic [ref=f9e168]:
+                - img "P4 Solar Panel" [ref=f9e266]
+                - generic [ref=f9e170]: P4 Solar Panel • 20 KW
+              - generic [ref=f9e171]:
+                - generic [ref=f9e172]:
+                  - heading "P4 Solar Panel" [level=2] [ref=f9e267]
+                  - generic [ref=f9e174]:
+                    - generic [ref=f9e175]: EQUIPMENT PRICE
+                    - generic [ref=f9e176]: $600 USDT
+                - generic [ref=f9e177]:
+                  - generic [ref=f9e178]:
+                    - generic [ref=f9e179]: DAILY REVENUE
+                    - strong [ref=f9e180]: +15.00 USDT
+                  - generic [ref=f9e181]:
+                    - generic [ref=f9e182]: OWNED QUANTITY
+                    - strong [ref=f9e183]: 0 units
+              - button "Buy P4 Solar Panel ($600 USDT)" [ref=f9e268] [cursor=pointer]
+            - generic [ref=f9e188]:
+              - generic [ref=f9e189]:
+                - img "P5 Solar Panel" [ref=f9e269]
+                - generic [ref=f9e191]: P5 Solar Panel • 50 KW
+              - generic [ref=f9e192]:
+                - generic [ref=f9e193]:
+                  - heading "P5 Solar Panel" [level=2] [ref=f9e270]
+                  - generic [ref=f9e195]:
+                    - generic [ref=f9e196]: EQUIPMENT PRICE
+                    - generic [ref=f9e197]: $1500 USDT
+                - generic [ref=f9e198]:
+                  - generic [ref=f9e199]:
+                    - generic [ref=f9e200]: DAILY REVENUE
+                    - strong [ref=f9e201]: +40.00 USDT
+                  - generic [ref=f9e202]:
+                    - generic [ref=f9e203]: OWNED QUANTITY
+                    - strong [ref=f9e204]: 0 units
+              - button "Buy P5 Solar Panel ($1500 USDT)" [ref=f9e271] [cursor=pointer]
+            - generic [ref=f9e209]:
+              - generic [ref=f9e210]:
+                - img "P6 Solar Panel" [ref=f9e272]
+                - generic [ref=f9e212]: P6 Solar Panel • 100 KW
+              - generic [ref=f9e213]:
+                - generic [ref=f9e214]:
+                  - heading "P6 Solar Panel" [level=2] [ref=f9e273]
+                  - generic [ref=f9e216]:
+                    - generic [ref=f9e217]: EQUIPMENT PRICE
+                    - generic [ref=f9e218]: $3000 USDT
+                - generic [ref=f9e219]:
+                  - generic [ref=f9e220]:
+                    - generic [ref=f9e221]: DAILY REVENUE
+                    - strong [ref=f9e222]: +85.00 USDT
+                  - generic [ref=f9e223]:
+                    - generic [ref=f9e224]: OWNED QUANTITY
+                    - strong [ref=f9e225]: 0 units
+              - button "Buy P6 Solar Panel ($3000 USDT)" [ref=f9e274] [cursor=pointer]
+          - generic [ref=f9e230]:
+            - generic [ref=f9e231]:
+              - heading "Panel Purchase Records" [level=2] [ref=f9e236]
+              - generic [ref=f9e237]:
+                - text: "Total Purchased:"
+                - strong [ref=f9e238]: 0 panels
+            - paragraph [ref=f9e245]: No panels purchased yet. Select a panel above to begin operations.
+  - generic [ref=f9e275]:
+    - generic [ref=f9e280]:
+      - heading "Panel Purchased Successfully" [level=4] [ref=f9e281]
+      - paragraph [ref=f9e282]: Activated P1 Solar Panel (1 KW). +2 points awarded!
+    - button "Dismiss" [ref=f9e283] [cursor=pointer]
+  - alert [ref=f9e246]

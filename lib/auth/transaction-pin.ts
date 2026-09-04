@@ -1,0 +1,158 @@
+import bcrypt from 'bcryptjs';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { SupabaseDatabaseService } from '@/lib/supabase/db';
+
+const MAX_PIN_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+
+export interface PinVerificationResult {
+  success: boolean;
+  message: string;
+  locked?: boolean;
+  lockedUntil?: string;
+  remainingAttempts?: number;
+}
+
+/**
+ * Validates a user's transaction PIN against their stored hash in the database.
+ * Enforces lockout after 5 consecutive failures.
+ */
+export async function verifyUserTransactionPin(
+  userId: string,
+  pinAttempt: string,
+  ipAddress?: string
+): Promise<PinVerificationResult> {
+  const supabase = await getSupabaseServerClient();
+
+  // Fetch current user PIN security fields
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('id, email, transaction_password_hash, failed_login_attempts, locked_until')
+    .eq('id', userId)
+    .single();
+
+  if (error || !user) {
+    return { success: false, message: 'User not found.' };
+  }
+
+  const now = new Date();
+
+  // Check if locked
+  if (user.locked_until && new Date(user.locked_until) > now) {
+    const minutesLeft = Math.ceil((new Date(user.locked_until).getTime() - now.getTime()) / 60000);
+    return {
+      success: false,
+      locked: true,
+      lockedUntil: user.locked_until,
+      message: `Account is temporarily locked due to too many failed attempts. Try again in ${minutesLeft} minute(s).`,
+    };
+  }
+
+  if (!user.transaction_password_hash) {
+    return {
+      success: false,
+      message: 'Transaction PIN is not set. Please configure your 6-digit transaction PIN in account settings.',
+    };
+  }
+
+  const isMatch = await bcrypt.compare(pinAttempt, user.transaction_password_hash);
+
+  if (!isMatch) {
+    const failedAttempts = (user.failed_login_attempts || 0) + 1;
+    let lockedUntil: string | null = null;
+
+    if (failedAttempts >= MAX_PIN_ATTEMPTS) {
+      lockedUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString();
+      await supabase
+        .from('users')
+        .update({ failed_login_attempts: 0, locked_until: lockedUntil })
+        .eq('id', userId);
+
+      await SupabaseDatabaseService.addAuditLog({
+        actorId: userId,
+        actorEmail: user.email,
+        actorRole: 'USER',
+        action: 'TRANSACTION_PIN_LOCKED',
+        targetType: 'USER_SECURITY',
+        targetId: userId,
+        details: { reason: 'Exceeded max PIN attempts', lockoutMinutes: LOCKOUT_MINUTES },
+        ipAddress: ipAddress || '127.0.0.1',
+      });
+
+      return {
+        success: false,
+        locked: true,
+        lockedUntil,
+        message: `Incorrect transaction PIN. Maximum attempts exceeded. Locked for ${LOCKOUT_MINUTES} minutes.`,
+      };
+    }
+
+    await supabase
+      .from('users')
+      .update({ failed_login_attempts: failedAttempts })
+      .eq('id', userId);
+
+    return {
+      success: false,
+      remainingAttempts: MAX_PIN_ATTEMPTS - failedAttempts,
+      message: `Incorrect transaction PIN. ${MAX_PIN_ATTEMPTS - failedAttempts} attempt(s) remaining before lockout.`,
+    };
+  }
+
+  // Reset failed attempts upon successful PIN verification
+  if (user.failed_login_attempts > 0 || user.locked_until) {
+    await supabase
+      .from('users')
+      .update({ failed_login_attempts: 0, locked_until: null })
+      .eq('id', userId);
+  }
+
+  return { success: true, message: 'Transaction PIN verified successfully.' };
+}
+
+/**
+ * Updates or sets a user's transaction PIN securely.
+ */
+export async function setUserTransactionPin(
+  userId: string,
+  newPin: string,
+  ipAddress?: string
+): Promise<{ success: boolean; message: string }> {
+  if (!newPin || newPin.length < 4 || newPin.length > 8 || !/^\d+$/.test(newPin)) {
+    return { success: false, message: 'Transaction PIN must be 4 to 8 numeric digits.' };
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const pinHash = await bcrypt.hash(newPin, 10);
+
+  const { data: user } = await supabase.from('users').select('email').eq('id', userId).single();
+
+  const { error } = await supabase
+    .from('users')
+    .update({
+      transaction_password_hash: pinHash,
+      failed_login_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (error) {
+    return { success: false, message: 'Failed to update transaction PIN.' };
+  }
+
+  if (user) {
+    await SupabaseDatabaseService.addAuditLog({
+      actorId: userId,
+      actorEmail: user.email,
+      actorRole: 'USER',
+      action: 'TRANSACTION_PIN_CHANGED',
+      targetType: 'USER_SECURITY',
+      targetId: userId,
+      details: { updated: true },
+      ipAddress: ipAddress || '127.0.0.1',
+    });
+  }
+
+  return { success: true, message: 'Transaction PIN updated successfully.' };
+}

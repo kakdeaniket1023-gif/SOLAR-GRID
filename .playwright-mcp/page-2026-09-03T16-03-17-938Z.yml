@@ -1,0 +1,61 @@
+- generic [ref=f8e2]:
+  - complementary [ref=f8e3]:
+    - link "SolarGrid SOLAR INFRASTRUCTURE" [ref=f8e5] [cursor=pointer]:
+      - /url: /dashboard
+      - generic [ref=f8e13]:
+        - generic [ref=f8e14]: SolarGrid
+        - generic [ref=f8e15]: SOLAR INFRASTRUCTURE
+    - generic [ref=f8e17]:
+      - generic [ref=f8e18]:
+        - generic [ref=f8e19]: Available Balance
+        - generic [ref=f8e20]: USDT
+      - generic [ref=f8e21]: $0.00
+      - generic [ref=f8e22]:
+        - link "Recharge" [ref=f8e23] [cursor=pointer]:
+          - /url: /dashboard/recharge
+        - link "Withdraw" [ref=f8e26] [cursor=pointer]:
+          - /url: /dashboard/withdrawal
+    - navigation [ref=f8e29]:
+      - generic [ref=f8e30]: Main Navigation
+      - link "Home" [ref=f8e31] [cursor=pointer]:
+        - /url: /dashboard
+      - link "Panels" [ref=f8e39] [cursor=pointer]:
+        - /url: /dashboard/panels
+      - link "Start Panel" [ref=f8e46] [cursor=pointer]:
+        - /url: /dashboard/start-panel
+      - link "Invite" [ref=f8e51] [cursor=pointer]:
+        - /url: /dashboard/invite
+      - link "Profile" [ref=f8e60] [cursor=pointer]:
+        - /url: /dashboard/profile
+    - generic [ref=f8e66]:
+      - generic [ref=f8e67]:
+        - generic [ref=f8e68]:
+          - generic [ref=f8e69]: SG
+          - generic [ref=f8e70]:
+            - generic [ref=f8e71]: Solar Member
+            - generic [ref=f8e72]: user@solargrid.io
+        - generic [ref=f8e73]: 100 pts
+      - button "Sign Out" [ref=f8e78] [cursor=pointer]
+  - generic [ref=f8e83]:
+    - banner [ref=f8e85]:
+      - generic [ref=f8e87]:
+        - generic [ref=f8e88]: ● LIVE
+        - generic [ref=f8e89]: Photovoltaic Infrastructure Platform
+    - main [ref=f8e90]:
+      - generic [ref=f8e91]:
+        - generic [ref=f8e92]:
+          - generic [ref=f8e93]:
+            - heading "Start Panel & Operations" [level=1] [ref=f8e94]
+            - paragraph [ref=f8e95]: Start your owned photovoltaic panels for a 3-hour generation cycle and receive daily USDT yields.
+          - generic [ref=f8e96]: 3-HOUR RUN TIME
+        - generic [ref=f8e102]:
+          - generic [ref=f8e107]:
+            - heading "No Solar Panels Owned Yet" [level=3] [ref=f8e108]
+            - paragraph [ref=f8e109]: You must purchase an active solar panel (P1 to P6) before you can start daily energy generation operations.
+          - link "Explore & Buy Panels" [ref=f8e111] [cursor=pointer]:
+            - /url: /dashboard/panels
+        - generic [ref=f8e115]:
+          - generic [ref=f8e116]:
+            - heading "Daily Receive System" [level=2] [ref=f8e121]
+            - generic [ref=f8e122]: 0 Active Generation Entries
+          - generic [ref=f8e123]: No daily earning entries available. Purchase and start a panel to generate earnings.
