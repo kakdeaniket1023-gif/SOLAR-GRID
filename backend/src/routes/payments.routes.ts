@@ -10,7 +10,11 @@ const router = Router();
  */
 router.post('/webhook', async (req: Request, res: Response) => {
   try {
-    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    const rawBody = (req as any).rawBody
+      ? (req as any).rawBody.toString('utf8')
+      : typeof req.body === 'string'
+      ? req.body
+      : JSON.stringify(req.body);
     const webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET;
 
     if (!webhookSecret || webhookSecret.length < 16) {

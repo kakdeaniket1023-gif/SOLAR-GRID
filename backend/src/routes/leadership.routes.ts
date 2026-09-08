@@ -19,8 +19,7 @@ router.get('/progress', requireUser, async (req: AuthenticatedRequest, res: Resp
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const allUsers = await DatabaseService.getAllUsers();
-    const directs = allUsers.filter((u) => u.sponsorId === targetUser.id);
+    const directCount = await DatabaseService.getDirectsCount(targetUser.id);
     const levels = await DatabaseService.getLeadershipLevels();
 
     const currentLevelConfig = levels.find((l) => l.level === targetUser.leadershipLevel) || levels[0];
@@ -32,11 +31,11 @@ router.get('/progress', requireUser, async (req: AuthenticatedRequest, res: Resp
       currentLevel: targetUser.leadershipLevel,
       currentLevelConfig,
       nextLevelConfig,
-      directCount: directs.length,
-      activeTeamCount: directs.length,
+      directCount,
+      activeTeamCount: directCount,
       points: targetUser.points,
       eligibleForPromotion: nextLevelConfig
-        ? directs.length >= nextLevelConfig.minDirectTeam && targetUser.points >= nextLevelConfig.minPoints
+        ? directCount >= nextLevelConfig.minDirectTeam && targetUser.points >= nextLevelConfig.minPoints
         : false,
     };
 
@@ -67,11 +66,10 @@ router.post('/promote', requireUser, async (req: AuthenticatedRequest, res: Resp
     }
 
     const nextLevel = levels[currentIndex + 1];
-    const allUsers = await DatabaseService.getAllUsers();
-    const directs = allUsers.filter((u) => u.sponsorId === user.id);
+    const directCount = await DatabaseService.getDirectsCount(user.id);
 
     if (authUser.role !== 'SUPER_ADMIN') {
-      if (directs.length < nextLevel.minDirectTeam || user.points < nextLevel.minPoints) {
+      if (directCount < nextLevel.minDirectTeam || user.points < nextLevel.minPoints) {
         return res.status(400).json({
           success: false,
           message: `Requirements not met. Requires ${nextLevel.minDirectTeam} directs and ${nextLevel.minPoints} points.`,

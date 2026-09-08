@@ -222,7 +222,7 @@ export function getDbClient(): any {
         const values = paramKeys.map((k) => params[k]);
         const query = `SELECT * FROM ${functionName}(${placeholders})`;
         const rows = await (sql as any).query(query, values);
-        return { data: rows && rows.length > 0 ? rows[0] : null, error: null };
+        return { data: rows || [], error: null };
       } catch (err: any) {
         return { data: null, error: err };
       }

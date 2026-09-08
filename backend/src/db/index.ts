@@ -1,4 +1,5 @@
 import { getDbClient, db } from './query-builder';
+import { sql } from './client';
 import { INITIAL_PLANS, INITIAL_PROJECTS } from '@/backend/db/seed-data';
 import {
   User,
@@ -1312,6 +1313,23 @@ export class DatabaseService {
     return results;
   }
 
+  static async getDirectsCount(sponsorId: string): Promise<number> {
+    if (!sponsorId) return 0;
+    try {
+      const res = await (sql as any).query('SELECT COUNT(*)::int as count FROM users WHERE sponsor_id = $1', [sponsorId]);
+      if (res && res[0] && res[0].count !== undefined) {
+        return Number(res[0].count);
+      }
+    } catch (err) {
+      console.warn('[getDirectsCount error]:', err);
+    }
+    let count = 0;
+    for (const u of fallbackUsers.values()) {
+      if (u.sponsorId === sponsorId) count++;
+    }
+    return count;
+  }
+
   static async updateUserPassword(id: string, newPasswordHash: string): Promise<boolean> {
     try {
       const dbClient = getDbClient();
@@ -1495,6 +1513,14 @@ export class DatabaseService {
         .single();
 
       if (fetchErr || !userRow) {
+        if (process.env.DATABASE_URL) {
+          return {
+            success: false,
+            balanceBefore: 0,
+            balanceAfter: 0,
+            message: `Database error: ${fetchErr?.message || 'User not found'}`,
+          };
+        }
         const local = fallbackUsers.get(userId);
         if (local) {
           if (local.availableBalance < amount) {
@@ -1595,6 +1621,14 @@ export class DatabaseService {
         .single();
 
       if (fetchErr || !userRow) {
+        if (process.env.DATABASE_URL) {
+          return {
+            success: false,
+            balanceBefore: 0,
+            balanceAfter: 0,
+            message: `Database error: ${fetchErr?.message || 'User not found'}`,
+          };
+        }
         const local = fallbackUsers.get(userId);
         if (local) {
           const before = local.availableBalance;
@@ -1658,6 +1692,14 @@ export class DatabaseService {
         .single();
 
       if (fetchErr || !userRow) {
+        if (process.env.DATABASE_URL) {
+          return {
+            success: false,
+            balanceBefore: 0,
+            balanceAfter: 0,
+            message: `Database error: ${fetchErr?.message || 'User not found'}`,
+          };
+        }
         const local = fallbackUsers.get(userId);
         if (local) {
           if ((local.points || 0) < pointsToDeduct) {
@@ -2206,7 +2248,14 @@ export class DatabaseService {
       if (!error && result) {
         return mapDbRecharge(result);
       }
-    } catch {}
+      if (process.env.DATABASE_URL) {
+        throw new Error(`Failed to persist recharge request to database: ${error?.message || 'Database error'}`);
+      }
+    } catch (err: any) {
+      if (process.env.DATABASE_URL) {
+        throw err;
+      }
+    }
 
     const record: RechargeRecord = {
       id: `rc-${Date.now()}`,
@@ -2402,7 +2451,14 @@ export class DatabaseService {
       if (!error && result) {
         return mapDbWithdrawal(result);
       }
-    } catch {}
+      if (process.env.DATABASE_URL) {
+        throw new Error(`Failed to persist withdrawal to database: ${error?.message || 'Database error'}`);
+      }
+    } catch (err: any) {
+      if (process.env.DATABASE_URL) {
+        throw err;
+      }
+    }
 
     const req: WithdrawalRequest = {
       id: `wdr-${Date.now()}`,
@@ -3665,7 +3721,14 @@ export class DatabaseService {
           const fullOrder = await this.getOrderById(orderId);
           if (fullOrder) return { success: true, order: fullOrder };
         }
-      } catch {}
+        if (process.env.DATABASE_URL) {
+          return { success: false, message: `Failed to persist order to database: ${orderErr?.message || 'Database error'}` };
+        }
+      } catch (err: any) {
+        if (process.env.DATABASE_URL) {
+          return { success: false, message: `Database error: ${err?.message || 'Failed to save order'}` };
+        }
+      }
 
       const fallbackOrder: Order = {
         id: orderId,

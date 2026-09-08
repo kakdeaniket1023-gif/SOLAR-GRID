@@ -356,6 +356,292 @@ async function migrate() {
   `;
   console.log('✓ platform_settings table created');
 
+  // 16. Notifications
+  await sql`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL,
+      message TEXT NOT NULL,
+      type VARCHAR(50) NOT NULL DEFAULT 'INFO',
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      link VARCHAR(255),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);`;
+  console.log('✓ notifications table created');
+
+  // 17. Support Messages
+  await sql`
+    CREATE TABLE IF NOT EXISTS support_messages (
+      id VARCHAR(64) PRIMARY KEY,
+      ticket_id VARCHAR(64) NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+      sender_id VARCHAR(64) NOT NULL,
+      sender_name VARCHAR(255) NOT NULL,
+      sender_role VARCHAR(20) NOT NULL CHECK (sender_role IN ('USER', 'SUPER_ADMIN')),
+      message TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_support_messages_ticket ON support_messages(ticket_id);`;
+  console.log('✓ support_messages table created');
+
+  // 18. Products (Direct Selling Hardware Catalog)
+  await sql`
+    CREATE TABLE IF NOT EXISTS products (
+      id VARCHAR(64) PRIMARY KEY,
+      sku VARCHAR(64) UNIQUE NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      retail_price NUMERIC(14,2) NOT NULL CHECK (retail_price > 0),
+      commissionable_value NUMERIC(14,2) NOT NULL CHECK (commissionable_value >= 0),
+      category VARCHAR(64) DEFAULT 'HARDWARE',
+      image_url TEXT,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);`;
+  console.log('✓ products table created');
+
+  // 19. Orders
+  await sql`
+    CREATE TABLE IF NOT EXISTS orders (
+      id VARCHAR(64) PRIMARY KEY,
+      order_no VARCHAR(64) UNIQUE NOT NULL,
+      user_id VARCHAR(64) REFERENCES users(id) ON DELETE RESTRICT,
+      status VARCHAR(32) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'CANCELLED', 'REFUNDED')),
+      total_amount NUMERIC(14,2) NOT NULL CHECK (total_amount >= 0),
+      total_pv NUMERIC(14,2) NOT NULL CHECK (total_pv >= 0),
+      payment_gateway_ref VARCHAR(255),
+      idempotency_key VARCHAR(255) UNIQUE,
+      shipping_address JSONB,
+      paid_at TIMESTAMPTZ,
+      refunded_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_orders_order_no ON orders(order_no);`;
+  console.log('✓ orders table created');
+
+  // 20. Order Items
+  await sql`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id VARCHAR(64) PRIMARY KEY,
+      order_id VARCHAR(64) REFERENCES orders(id) ON DELETE CASCADE,
+      product_id VARCHAR(64) REFERENCES products(id) ON DELETE RESTRICT,
+      qty INTEGER NOT NULL CHECK (qty > 0),
+      unit_price NUMERIC(14,2) NOT NULL,
+      pv_amount NUMERIC(14,2) NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);`;
+  console.log('✓ order_items table created');
+
+  // 21. Identity Verification (KYC) Submissions
+  await sql`
+    CREATE TABLE IF NOT EXISTS kyc_submissions (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) REFERENCES users(id) ON DELETE CASCADE,
+      doc_type VARCHAR(64) NOT NULL,
+      doc_number VARCHAR(128) NOT NULL,
+      front_url TEXT NOT NULL,
+      back_url TEXT,
+      status VARCHAR(32) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'VERIFIED', 'REJECTED')),
+      rejection_reason TEXT,
+      reviewed_by VARCHAR(64),
+      reviewed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_kyc_user_id ON kyc_submissions(user_id);`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_kyc_status ON kyc_submissions(status);`;
+  console.log('✓ kyc_submissions table created');
+
+  // 22. Payout Methods
+  await sql`
+    CREATE TABLE IF NOT EXISTS payout_methods (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) REFERENCES users(id) ON DELETE CASCADE,
+      type VARCHAR(32) NOT NULL CHECK (type IN ('USDT_TRC20', 'USDT_BEP20', 'BANK_WIRE')),
+      details JSONB NOT NULL,
+      is_verified BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      verified_at TIMESTAMPTZ
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_payout_methods_user ON payout_methods(user_id);`;
+  console.log('✓ payout_methods table created');
+
+  // 23. Fraud Signals
+  await sql`
+    CREATE TABLE IF NOT EXISTS fraud_signals (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) REFERENCES users(id) ON DELETE CASCADE,
+      signal_type VARCHAR(64) NOT NULL,
+      severity VARCHAR(32) NOT NULL DEFAULT 'LOW' CHECK (severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
+      details JSONB NOT NULL DEFAULT '{}'::jsonb,
+      resolved BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_fraud_signals_user ON fraud_signals(user_id);`;
+  console.log('✓ fraud_signals table created');
+
+  // 24. Leadership Levels
+  await sql`
+    CREATE TABLE IF NOT EXISTS leadership_levels (
+      id VARCHAR(64) PRIMARY KEY,
+      tier VARCHAR(50) UNIQUE NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      required_direct_members INTEGER NOT NULL DEFAULT 0,
+      required_active_team_members INTEGER NOT NULL DEFAULT 0,
+      required_min_plan VARCHAR(20) NOT NULL DEFAULT 'P1',
+      required_points INTEGER NOT NULL DEFAULT 70,
+      daily_bonus_usdt NUMERIC(14, 4) NOT NULL DEFAULT 0.0000,
+      badge_color VARCHAR(50) NOT NULL DEFAULT 'text-amber-400',
+      display_order INTEGER NOT NULL DEFAULT 1
+    );
+  `;
+  console.log('✓ leadership_levels table created');
+
+  // 25. Rewards Catalog
+  await sql`
+    CREATE TABLE IF NOT EXISTS rewards (
+      id VARCHAR(64) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      description TEXT NOT NULL,
+      points_cost INTEGER NOT NULL CHECK (points_cost > 0),
+      category VARCHAR(50) NOT NULL,
+      image_url TEXT NOT NULL,
+      stock INTEGER NOT NULL DEFAULT 100,
+      status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `;
+  console.log('✓ rewards table created');
+
+  // 26. Reward Redemptions
+  await sql`
+    CREATE TABLE IF NOT EXISTS reward_redemptions (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      reward_id VARCHAR(64) NOT NULL REFERENCES rewards(id),
+      points_spent INTEGER NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+      shipping_address TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_reward_redemptions_user ON reward_redemptions(user_id);`;
+  console.log('✓ reward_redemptions table created');
+
+  // 27. Dynamic Business Rules
+  await sql`
+    CREATE TABLE IF NOT EXISTS business_rules (
+      id VARCHAR(64) PRIMARY KEY,
+      key VARCHAR(100) UNIQUE NOT NULL,
+      value JSONB NOT NULL,
+      description TEXT,
+      category VARCHAR(50) DEFAULT 'SYSTEM',
+      label VARCHAR(255),
+      updated_by VARCHAR(255) DEFAULT 'SYSTEM',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `;
+  await sql`ALTER TABLE business_rules ADD COLUMN IF NOT EXISTS id VARCHAR(64) DEFAULT md5(random()::text);`;
+  await sql`ALTER TABLE business_rules ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'SYSTEM';`;
+  await sql`ALTER TABLE business_rules ADD COLUMN IF NOT EXISTS label VARCHAR(255);`;
+  await sql`ALTER TABLE business_rules ADD COLUMN IF NOT EXISTS updated_by VARCHAR(255) DEFAULT 'SYSTEM';`;
+  console.log('✓ business_rules table created');
+
+  // 28. Stored Procedures: debit_user_balance & credit_user_balance
+  await sql`
+    CREATE OR REPLACE FUNCTION debit_user_balance(p_user_id VARCHAR(64), p_amount NUMERIC)
+    RETURNS TABLE (
+      success BOOLEAN,
+      balance_before NUMERIC,
+      balance_after NUMERIC,
+      message TEXT
+    ) LANGUAGE plpgsql SECURITY DEFINER AS $$
+    DECLARE
+      v_current NUMERIC;
+    BEGIN
+      IF p_amount <= 0 THEN
+        RETURN QUERY SELECT false, 0::NUMERIC, 0::NUMERIC, 'Invalid debit amount'::TEXT;
+        RETURN;
+      END IF;
+
+      SELECT available_balance INTO v_current
+      FROM users
+      WHERE id = p_user_id
+      FOR UPDATE;
+
+      IF NOT FOUND THEN
+        RETURN QUERY SELECT false, 0::NUMERIC, 0::NUMERIC, 'User not found'::TEXT;
+        RETURN;
+      END IF;
+
+      IF v_current < p_amount THEN
+        RETURN QUERY SELECT false, v_current, v_current, 'Insufficient balance'::TEXT;
+        RETURN;
+      END IF;
+
+      UPDATE users
+      SET available_balance = ROUND((available_balance - p_amount)::NUMERIC, 4),
+          updated_at = NOW()
+      WHERE id = p_user_id;
+
+      RETURN QUERY SELECT true, v_current, ROUND((v_current - p_amount)::NUMERIC, 4), 'Success'::TEXT;
+    END;
+    $$;
+  `;
+  console.log('✓ debit_user_balance function created');
+
+  await sql`
+    CREATE OR REPLACE FUNCTION credit_user_balance(p_user_id VARCHAR(64), p_amount NUMERIC, p_total_earned_delta NUMERIC DEFAULT 0)
+    RETURNS TABLE (
+      success BOOLEAN,
+      balance_before NUMERIC,
+      balance_after NUMERIC,
+      message TEXT
+    ) LANGUAGE plpgsql SECURITY DEFINER AS $$
+    DECLARE
+      v_current NUMERIC;
+    BEGIN
+      IF p_amount <= 0 THEN
+        RETURN QUERY SELECT false, 0::NUMERIC, 0::NUMERIC, 'Invalid credit amount'::TEXT;
+        RETURN;
+      END IF;
+
+      SELECT available_balance INTO v_current
+      FROM users
+      WHERE id = p_user_id
+      FOR UPDATE;
+
+      IF NOT FOUND THEN
+        RETURN QUERY SELECT false, 0::NUMERIC, 0::NUMERIC, 'User not found'::TEXT;
+        RETURN;
+      END IF;
+
+      UPDATE users
+      SET available_balance = ROUND((available_balance + p_amount)::NUMERIC, 4),
+          total_earned = ROUND((total_earned + COALESCE(p_total_earned_delta, 0))::NUMERIC, 4),
+          updated_at = NOW()
+      WHERE id = p_user_id;
+
+      RETURN QUERY SELECT true, v_current, ROUND((v_current + p_amount)::NUMERIC, 4), 'Success'::TEXT;
+    END;
+    $$;
+  `;
+  console.log('✓ credit_user_balance function created');
+
   // --- SEED INITIAL DATA ---
   console.log('--- Seeding Initial Data into Neon ---');
 
@@ -651,7 +937,87 @@ async function migrate() {
     )
     ON CONFLICT (id) DO NOTHING;
   `;
-  console.log('✓ Seeded member active solar units');
+  // Seed Products
+  const products = [
+    { id: 'prod-1', sku: 'SOL-500W-PANEL', name: 'SolarGrid 500W High-Efficiency Monocrystalline Panel', desc: 'Commercial-grade photovoltaic module with 22.8% cell efficiency and 25-year warranty.', price: 180.00, pv: 150.00, cat: 'HARDWARE', img: '/images/panel-p1.jpg' },
+    { id: 'prod-2', sku: 'INV-3KW-SMART', name: 'SolarGrid 3kW Hybrid Grid-Tie Smart Inverter', desc: 'Pure sine wave inverter with dual MPPT charge controller and cloud energy tracking.', price: 450.00, pv: 400.00, cat: 'HARDWARE', img: '/images/panel-p2.jpg' },
+    { id: 'prod-3', sku: 'SOL-KIT-2KWH', name: 'SolarGrid 2.4kWh LiFePO4 Energy Storage Station', desc: 'Modular lithium-iron phosphate battery backup system with 6,000+ cycle lifespan.', price: 850.00, pv: 750.00, cat: 'HARDWARE', img: '/images/panel-p3.jpg' },
+    { id: 'prod-4', sku: 'IOT-MONITOR-PRO', name: 'SolarGrid Smart IoT Energy Consumption Monitor', desc: 'Real-time panel telemetry gateway with Zigbee mesh and mobile analytics connectivity.', price: 95.00, pv: 80.00, cat: 'ACCESSORIES', img: '/images/panel-p4.jpg' },
+    { id: 'prod-5', sku: 'SRV-AUDIT-HOME', name: 'Professional Residential Solar Engineering Assessment', desc: 'Comprehensive on-site shade, irradiation, and structural installation engineering audit.', price: 120.00, pv: 100.00, cat: 'SERVICES', img: '/images/panel-p5.jpg' }
+  ];
+
+  for (const prod of products) {
+    await sql`
+      INSERT INTO products (id, sku, name, description, retail_price, commissionable_value, category, image_url, is_active)
+      VALUES (${prod.id}, ${prod.sku}, ${prod.name}, ${prod.desc}, ${prod.price}, ${prod.pv}, ${prod.cat}, ${prod.img}, TRUE)
+      ON CONFLICT (id) DO UPDATE SET
+        retail_price = EXCLUDED.retail_price,
+        commissionable_value = EXCLUDED.commissionable_value,
+        name = EXCLUDED.name;
+    `;
+  }
+  console.log('✓ Seeded products catalog');
+
+  // Seed Leadership Levels
+  const levels = [
+    { id: 'll-1', tier: 'SOLAR_MEMBER', name: 'Solar Member', directs: 0, activeTeam: 0, plan: 'P1', points: 70, bonus: 0, badge: 'text-slate-400', order: 1 },
+    { id: 'll-2', tier: 'SOLAR_BUILDER', name: 'Solar Builder', directs: 3, activeTeam: 5, plan: 'P1', points: 70, bonus: 1.5, badge: 'text-cyan-400', order: 2 },
+    { id: 'll-3', tier: 'ENERGY_COORDINATOR', name: 'Energy Coordinator', directs: 8, activeTeam: 20, plan: 'P2', points: 80, bonus: 5.0, badge: 'text-emerald-400', order: 3 },
+    { id: 'll-4', tier: 'SOLAR_LEADER', name: 'Solar Leader', directs: 15, activeTeam: 50, plan: 'P2', points: 85, bonus: 15.0, badge: 'text-purple-400', order: 4 },
+  ];
+
+  for (const l of levels) {
+    await sql`
+      INSERT INTO leadership_levels (id, tier, name, required_direct_members, required_active_team_members, required_min_plan, required_points, daily_bonus_usdt, badge_color, display_order)
+      VALUES (${l.id}, ${l.tier}, ${l.name}, ${l.directs}, ${l.activeTeam}, ${l.plan}, ${l.points}, ${l.bonus}, ${l.badge}, ${l.order})
+      ON CONFLICT (tier) DO UPDATE SET
+        name = EXCLUDED.name,
+        daily_bonus_usdt = EXCLUDED.daily_bonus_usdt;
+    `;
+  }
+  console.log('✓ Seeded leadership levels');
+
+  // Seed Rewards
+  const rewards = [
+    { id: 'rew-5usdt', name: '5.00 USDT Energy Voucher', desc: 'Direct cash credit deposited straight to your available balance.', cost: 50, cat: 'CREDIT', img: '/images/rewards/voucher.jpg', stock: 999 },
+    { id: 'rew-20usdt', name: '20.00 USDT Energy Voucher', desc: 'High-value balance credit deposited to your account.', cost: 180, cat: 'CREDIT', img: '/images/rewards/voucher-gold.jpg', stock: 999 },
+    { id: 'rew-booster', name: 'Generation Efficiency Booster', desc: 'Temporary +5% solar panel generation boost for 7 operational days.', cost: 80, cat: 'BOOST', img: '/images/rewards/booster.jpg', stock: 100 },
+    { id: 'rew-vip-pass', name: 'VIP Community Ambassador Pass', desc: 'Priority withdrawal processing queue and VIP community support lounge.', cost: 250, cat: 'STATUS', img: '/images/rewards/vip.jpg', stock: 50 },
+    { id: 'rw-solar-hoodie', name: 'SolarGrid Executive Tech Hoodie', desc: 'Premium heavyweight organic cotton hoodie with embroidered SolarGrid insignia.', cost: 50, cat: 'LIFESTYLE', img: '/images/rewards/hoodie.jpg', stock: 45 },
+  ];
+
+  for (const rew of rewards) {
+    await sql`
+      INSERT INTO rewards (id, name, description, points_cost, category, image_url, stock, status)
+      VALUES (${rew.id}, ${rew.name}, ${rew.desc}, ${rew.cost}, ${rew.cat}, ${rew.img}, ${rew.stock}, 'AVAILABLE')
+      ON CONFLICT (id) DO UPDATE SET
+        points_cost = EXCLUDED.points_cost,
+        description = EXCLUDED.description;
+    `;
+  }
+  console.log('✓ Seeded rewards');
+
+  // Seed Business Rules
+  const rules = [
+    { id: 'br-1', key: 'STARTING_POINTS', cat: 'POINTS', label: 'Baseline Starting Points', val: 70, desc: 'Default points for new signups' },
+    { id: 'br-2', key: 'MINIMUM_WITHDRAWAL_USDT', cat: 'WITHDRAWAL', label: 'Minimum Withdrawal', val: 10, desc: 'Minimum allowed withdrawal amount in USDT' },
+    { id: 'br-3', key: 'COMMISSION_L1_PERCENT', cat: 'MLM', label: 'Level 1 Commission', val: 10, desc: 'Level 1 direct commission percentage' },
+    { id: 'br-4', key: 'COMMISSION_L2_PERCENT', cat: 'MLM', label: 'Level 2 Commission', val: 5, desc: 'Level 2 commission percentage' },
+    { id: 'br-5', key: 'COMMISSION_L3_PERCENT', cat: 'MLM', label: 'Level 3 Commission', val: 2, desc: 'Level 3 commission percentage' },
+    { id: 'br-6', key: 'WORKING_DAYS_PER_CYCLE', cat: 'SOLAR', label: 'Working Days per Cycle', val: 43, desc: 'Working weekdays per 60-day calendar cycle' },
+  ];
+
+  for (const r of rules) {
+    const valJson = JSON.stringify({ value: r.val });
+    await sql`
+      INSERT INTO business_rules (id, key, value, description, category, label)
+      VALUES (${r.id}, ${r.key}, ${valJson}::jsonb, ${r.desc}, ${r.cat}, ${r.label})
+      ON CONFLICT (key) DO UPDATE SET
+        value = EXCLUDED.value,
+        description = EXCLUDED.description;
+    `;
+  }
+  console.log('✓ Seeded business rules');
 
   console.log('--- Neon Database Initialization Complete! ---');
 }
