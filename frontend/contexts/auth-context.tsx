@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Profile } from '@/types';
+import { apiClient } from '@/frontend/lib/api-client';
 
 interface AuthContextType {
   user: User | null;
@@ -22,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      const res = await fetch('/api/auth/me', { cache: 'no-store' });
+      const res = await apiClient('/api/auth/me', { cache: 'no-store', credentials: 'include' });
       const data = await res.json();
       if (data.success && data.user) {
         setUser(data.user);
@@ -45,9 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password?: string) => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await apiClient('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
@@ -64,9 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = async (name: string, email: string, referralCode?: string, password?: string) => {
     try {
-      const res = await fetch('/api/auth/signup', {
+      const res = await apiClient('/api/auth/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name, email, referralCode, password }),
       });
       const data = await res.json();
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await apiClient('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch {
       // ignore
     }

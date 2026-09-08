@@ -1262,7 +1262,12 @@ export class DatabaseService {
       const { data, error } = await dbClient.from('users').select('*').ilike('email', email.trim()).single();
       if (!error && data) {
         const user = mapDbUser(data);
-        return { ...user, passwordHash: data.password_hash };
+        return {
+          ...user,
+          passwordHash: data.password_hash,
+          failedLoginAttempts: Number(data.failed_login_attempts || 0),
+          lockedUntil: data.locked_until || null,
+        };
       }
     } catch {}
     for (const u of fallbackUsers.values()) {
@@ -1339,6 +1344,37 @@ export class DatabaseService {
     const u = fallbackUsers.get(id);
     if (u) (u as any).passwordHash = newPasswordHash;
     return true;
+  }
+
+  static async incrementFailedLoginAttempts(userId: string): Promise<{ locked: boolean; lockedUntil: string | null }> {
+    try {
+      const dbClient = getDbClient();
+      const { data: userRow } = await dbClient.from('users').select('failed_login_attempts').eq('id', userId).single();
+      const attempts = (Number(userRow?.failed_login_attempts) || 0) + 1;
+      const locked = attempts >= 5;
+      const lockedUntil = locked ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
+
+      await dbClient.from('users').update({
+        failed_login_attempts: attempts,
+        locked_until: lockedUntil,
+        updated_at: new Date().toISOString(),
+      }).eq('id', userId);
+
+      return { locked, lockedUntil };
+    } catch {
+      return { locked: false, lockedUntil: null };
+    }
+  }
+
+  static async resetFailedLoginAttempts(userId: string): Promise<void> {
+    try {
+      const dbClient = getDbClient();
+      await dbClient.from('users').update({
+        failed_login_attempts: 0,
+        locked_until: null,
+        updated_at: new Date().toISOString(),
+      }).eq('id', userId);
+    } catch {}
   }
 
   static async createUser(userData: {

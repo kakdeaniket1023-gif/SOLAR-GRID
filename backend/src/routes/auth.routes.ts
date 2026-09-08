@@ -56,6 +56,15 @@ router.post('/login', async (req: Request, res: Response) => {
     const cleanEmail = email.trim().toLowerCase();
 
     const dbUserWithHash = await DatabaseService.getUserWithPasswordByEmail(cleanEmail);
+    if (dbUserWithHash && (dbUserWithHash as any).lockedUntil && new Date((dbUserWithHash as any).lockedUntil) > new Date()) {
+      const remainingMin = Math.ceil((new Date((dbUserWithHash as any).lockedUntil).getTime() - Date.now()) / 60000);
+      return res.status(423).json({
+        success: false,
+        error: 'ACCOUNT_LOCKED',
+        message: `Account is temporarily locked due to consecutive failed attempts. Try again in ${remainingMin} minute(s).`,
+      });
+    }
+
     let user: any = null;
 
     if (dbUserWithHash && dbUserWithHash.passwordHash) {
@@ -66,11 +75,25 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     if (!user) {
+      if (dbUserWithHash) {
+        const { locked } = await DatabaseService.incrementFailedLoginAttempts(dbUserWithHash.id);
+        if (locked) {
+          return res.status(423).json({
+            success: false,
+            error: 'ACCOUNT_LOCKED',
+            message: 'Too many consecutive failed login attempts. Account temporarily locked for 15 minutes.',
+          });
+        }
+      }
       return res.status(401).json({
         success: false,
         error: 'INVALID_CREDENTIALS',
         message: 'Invalid email or password.',
       });
+    }
+
+    if ((dbUserWithHash as any).failedLoginAttempts > 0 || (dbUserWithHash as any).lockedUntil) {
+      await DatabaseService.resetFailedLoginAttempts(user.id);
     }
 
     if (user.status === 'BANNED' || user.status === 'SUSPENDED') {
@@ -516,6 +539,18 @@ router.post('/sessions', requireUser, async (req: AuthenticatedRequest, res: Res
           error: 'VALIDATION_ERROR',
           message: 'Session ID is required',
         });
+      }
+
+      if (user.role !== 'SUPER_ADMIN') {
+        const userSessions = await DatabaseService.getUserSessions(user.id);
+        const ownsSession = userSessions.some((s) => s.id === sessionId || s.sessionToken === sessionId);
+        if (!ownsSession) {
+          return res.status(403).json({
+            success: false,
+            error: 'FORBIDDEN',
+            message: 'You cannot revoke a session that does not belong to you',
+          });
+        }
       }
 
       const success = await DatabaseService.revokeSession(sessionId);

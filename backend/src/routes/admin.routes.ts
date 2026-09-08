@@ -226,6 +226,14 @@ router.post('/users', async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'userId is required' });
     }
 
+    const ALLOWED_STATUSES = ['ACTIVE', 'PENDING', 'SUSPENDED', 'BANNED'];
+    if (status && !ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(', ')}`,
+      });
+    }
+
     const user = await DatabaseService.getUserById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
