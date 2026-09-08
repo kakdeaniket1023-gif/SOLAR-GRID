@@ -234,14 +234,20 @@ export class SolarGenerationService {
       };
     }
 
-    // Enforce 3-hour generation cycle hold
+    // Enforce mandatory 3-hour generation cycle hold
     const todayLog = existingLogs.find((l) => l.unitId === unitId && l.generationDate === todayStr);
-    const startedAtTime = todayLog?.operatedAt ? new Date(todayLog.operatedAt).getTime() : 0;
+    if (!todayLog || !todayLog.operatedAt) {
+      return {
+        success: false,
+        message: 'Generation cycle has not been started for today. Please click "Start Panel" to initiate the 3-hour cycle.',
+      };
+    }
+
+    const startedAtTime = new Date(todayLog.operatedAt).getTime();
     const elapsedSeconds = Math.floor((Date.now() - startedAtTime) / 1000);
     const REQUIRED_CYCLE_SECONDS = 3 * 3600; // 3 hours
 
-    const isTestOrForced = process.env.NODE_ENV === 'test' || Boolean(unit.isReceivable);
-    if (!isTestOrForced && startedAtTime > 0 && elapsedSeconds < REQUIRED_CYCLE_SECONDS) {
+    if (elapsedSeconds < REQUIRED_CYCLE_SECONDS) {
       const remainingMinutes = Math.ceil((REQUIRED_CYCLE_SECONDS - elapsedSeconds) / 60);
       return {
         success: false,

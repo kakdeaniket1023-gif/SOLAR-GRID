@@ -5,7 +5,7 @@ const rawSecret = process.env.JWT_SECRET;
 if (!rawSecret && process.env.NODE_ENV === 'production') {
   throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing in production!');
 }
-const JWT_SECRET = rawSecret || 'solargrid-neon-jwt-crypto-secret-key-2026-secure-production';
+const JWT_SECRET = rawSecret || 'solargrid_production_sec_key_9f8b2c4e1a7d3f5b8e0c2a4d6f8a1b3c5e7d9f0a2b4c6e8d';
 const SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
 export interface AuthTokenPayload {
@@ -75,7 +75,7 @@ export function setAuthCookie(res: any, token: string): void {
     res.cookie(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
+      sameSite: 'lax',
       path: '/',
       maxAge,
     });
@@ -91,7 +91,7 @@ export function clearAuthCookie(res: any): void {
     res.clearCookie(AUTH_COOKIE_NAME, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
+      sameSite: 'lax',
       path: '/',
     });
   }

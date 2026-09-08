@@ -40,15 +40,17 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
-      if (
+      const isAllowed =
         allowedOrigins.includes(origin) ||
-        process.env.NODE_ENV !== 'production' ||
         origin.endsWith('.pages.dev') ||
-        origin.endsWith('.solargrid.io')
-      ) {
+        origin.endsWith('.solargrid.io') ||
+        (process.env.NODE_ENV !== 'production' &&
+          (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')));
+
+      if (isAllowed) {
         return callback(null, true);
       }
-      return callback(null, true); // Permissive in dev/staging
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -62,6 +64,35 @@ app.use(cookieParser());
 
 // Trust first proxy hop (Cloudflare, Render, AWS ALB, Nginx)
 app.set('trust proxy', 1);
+
+// CSRF Origin verification middleware on state-mutating requests
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase());
+  if (req.path === '/api/payments/webhook') {
+    return next();
+  }
+
+  if (isMutating) {
+    const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+    if (origin) {
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.pages.dev') ||
+        origin.endsWith('.solargrid.io') ||
+        (process.env.NODE_ENV !== 'production' &&
+          (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')));
+
+      if (!isAllowed) {
+        return res.status(403).json({
+          success: false,
+          error: 'CSRF_BLOCKED',
+          message: 'Cross-site request blocked by security policy.',
+        });
+      }
+    }
+  }
+  next();
+});
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
@@ -104,6 +135,14 @@ app.use((req: Request, res: Response) => {
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+  if (err.message && err.message.includes('CORS blocked')) {
+    return res.status(403).json({
+      success: false,
+      error: 'CORS_BLOCKED',
+      message: 'Cross-origin request blocked by security policy.',
+    });
+  }
+
   console.error('Unhandled server error:', err);
   res.status(500).json({
     success: false,

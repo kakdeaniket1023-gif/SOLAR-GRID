@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import { DatabaseService } from '@/backend/db';
+import { DatabaseService, db } from '@/backend/db';
 import { signAuthToken, setAuthCookie, clearAuthCookie } from '@/backend/auth/jwt';
 import { requireAuthenticatedUser, requireUser, AuthenticatedRequest } from '@/backend/auth/guards';
 import { verifyUserTransactionPin, setUserTransactionPin } from '@/backend/auth/transaction-pin';
@@ -32,6 +32,7 @@ const PinSchema = z.object({
   action: z.enum(['VERIFY', 'SET', 'CHANGE']),
   transactionPassword: z.string().optional(),
   newTransactionPassword: z.string().regex(/^\d{4,8}$/, 'Transaction PIN must be 4 to 8 numeric digits').optional(),
+  accountPassword: z.string().optional(),
 });
 
 /**
@@ -546,12 +547,23 @@ router.post('/transaction-password', requireAuthenticatedUser, async (req: Authe
         });
       }
 
-      if (action === 'CHANGE') {
+      // Check if user already has a PIN configured in DB
+      const userWithHash = await DatabaseService.getUserWithPasswordByEmail(user.email);
+      const { data: userPinRecord } = await db
+        .from('users')
+        .select('transaction_password_hash')
+        .eq('id', user.id)
+        .single();
+
+      const hasExistingPin = Boolean(userPinRecord?.transaction_password_hash);
+
+      if (hasExistingPin) {
+        // If a PIN already exists, the current PIN is strictly required to authorize changes
         if (!transactionPassword) {
           return res.status(400).json({
             success: false,
             error: 'VALIDATION_ERROR',
-            message: 'Current transaction PIN is required',
+            message: 'Current transaction PIN is required to authorize PIN changes',
           });
         }
 
@@ -562,6 +574,27 @@ router.post('/transaction-password', requireAuthenticatedUser, async (req: Authe
             error: verifyResult.locked ? 'LOCKED' : 'INVALID_PIN',
             message: verifyResult.message,
           });
+        }
+      } else {
+        // First-time setting: require account login password to prevent CSRF hijacking
+        const accountPwd = parseResult.data.accountPassword || transactionPassword;
+        if (!accountPwd) {
+          return res.status(400).json({
+            success: false,
+            error: 'VALIDATION_ERROR',
+            message: 'Account login password confirmation is required to initialize your transaction PIN',
+          });
+        }
+
+        if (userWithHash?.passwordHash) {
+          const isPasswordValid = await bcrypt.compare(accountPwd, userWithHash.passwordHash);
+          if (!isPasswordValid) {
+            return res.status(401).json({
+              success: false,
+              error: 'INVALID_CREDENTIALS',
+              message: 'Invalid account password confirmation',
+            });
+          }
         }
       }
 

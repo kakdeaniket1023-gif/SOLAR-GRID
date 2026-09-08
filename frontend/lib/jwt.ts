@@ -1,7 +1,7 @@
 import { jwtVerify } from 'jose';
 
 export const AUTH_COOKIE_NAME = 'solargrid_token';
-const JWT_SECRET = process.env.JWT_SECRET || 'solargrid-neon-jwt-crypto-secret-key-2026-secure-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'solargrid_production_sec_key_9f8b2c4e1a7d3f5b8e0c2a4d6f8a1b3c5e7d9f0a2b4c6e8d';
 const SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
 export interface AuthTokenPayload {

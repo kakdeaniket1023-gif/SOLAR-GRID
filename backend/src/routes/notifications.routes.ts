@@ -39,7 +39,7 @@ router.post('/', requireUser, async (req: AuthenticatedRequest, res: Response) =
     }
 
     if (action === 'MARK_READ' && notificationId) {
-      await DatabaseService.markNotificationRead(notificationId);
+      await DatabaseService.markNotificationRead(notificationId, user.id);
       return res.status(200).json({ success: true, message: 'Notification marked as read' });
     }
 

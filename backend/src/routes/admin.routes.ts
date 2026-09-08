@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { requireSuperAdmin, AuthenticatedRequest } from '@/backend/auth/guards';
 import { DatabaseService } from '@/backend/db';
 import { MLMService } from '@/backend/engines/mlm-engine';
+import { WithdrawalService } from '@/backend/engines/withdrawal-engine';
 import { FraudDetector } from '@/backend/ml/fraud-detector';
 
 const router = Router();
@@ -379,6 +380,65 @@ router.post('/recharges', async (req: AuthenticatedRequest, res: Response) => {
     return res.status(400).json({ success: false, message: 'Invalid action' });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: 'Failed to process recharge' });
+  }
+});
+
+/**
+ * GET /api/admin/withdrawals
+ */
+router.get('/withdrawals', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const all = await DatabaseService.getAllWithdrawals();
+    const filtered = status && status !== 'ALL' ? all.filter((w) => w.status === status) : all;
+    return res.status(200).json({ success: true, withdrawals: filtered });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch admin withdrawals' });
+  }
+});
+
+/**
+ * POST /api/admin/withdrawals
+ */
+router.post('/withdrawals', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const admin = req.user!;
+    const { withdrawalId, action, txHash, adminNotes } = req.body || {};
+
+    if (!withdrawalId || !action) {
+      return res.status(400).json({ success: false, message: 'withdrawalId and action are required' });
+    }
+
+    const result = await WithdrawalService.processAdminAction(
+      withdrawalId,
+      action,
+      admin.id,
+      admin.name,
+      txHash,
+      adminNotes
+    );
+
+    if (!result.success) {
+      return res.status(400).json({ success: false, message: result.message });
+    }
+
+    await DatabaseService.addAuditLog({
+      actorId: admin.id,
+      actorEmail: admin.email,
+      actorRole: 'SUPER_ADMIN',
+      action: `ADMIN_WITHDRAWAL_${action}`,
+      targetType: 'WITHDRAWAL',
+      targetId: withdrawalId,
+      details: { action, txHash, adminNotes },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      withdrawal: result.request,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to process withdrawal action' });
   }
 });
 

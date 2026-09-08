@@ -66,17 +66,19 @@ export class PointsService {
       return { success: false, message: 'Reward item is not available' };
     }
 
-    if (user.points < reward.pointsCost) {
+    // 1. Atomically deduct points using strict CAS to prevent concurrent double-spend
+    const deductRes = await DatabaseService.atomicDeductPoints(user.id, reward.pointsCost);
+    if (!deductRes.success) {
       return {
         success: false,
-        message: `Insufficient points. You have ${user.points} pts, but ${reward.pointsCost} pts are required.`,
+        message: deductRes.message || `Insufficient points. You have ${user.points} pts, but ${reward.pointsCost} pts are required.`,
       };
     }
 
-    const balanceBefore = user.points;
-    const balanceAfter = Math.max(0, user.points - reward.pointsCost);
+    const balanceBefore = deductRes.balanceBefore;
+    const balanceAfter = deductRes.balanceAfter;
 
-    // If redeeming a cash balance voucher, credit user balance atomically
+    // 2. If redeeming a cash balance voucher, credit user balance atomically
     let voucherCreditAmount = 0;
     if (reward.id === 'rew-5usdt') {
       voucherCreditAmount = 5;
@@ -110,8 +112,6 @@ export class PointsService {
       balanceAfter,
       reason: `Redeemed milestone: ${reward.title}. -${reward.pointsCost} points deducted.`,
     });
-
-    await DatabaseService.updateUser(user.id, { points: balanceAfter });
 
     await DatabaseService.createNotification({
       userId: user.id,

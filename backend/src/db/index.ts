@@ -1642,6 +1642,80 @@ export class DatabaseService {
     };
   }
 
+  static async atomicDeductPoints(
+    userId: string,
+    pointsToDeduct: number
+  ): Promise<{ success: boolean; balanceBefore: number; balanceAfter: number; message?: string }> {
+    if (pointsToDeduct <= 0) return { success: false, balanceBefore: 0, balanceAfter: 0, message: 'Invalid deduction amount' };
+    const dbClient = getDbClient();
+
+    const MAX_RETRIES = 3;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      const { data: userRow, error: fetchErr } = await dbClient
+        .from('users')
+        .select('id, points')
+        .eq('id', userId)
+        .single();
+
+      if (fetchErr || !userRow) {
+        const local = fallbackUsers.get(userId);
+        if (local) {
+          if ((local.points || 0) < pointsToDeduct) {
+            return {
+              success: false,
+              balanceBefore: local.points || 0,
+              balanceAfter: local.points || 0,
+              message: `Insufficient points. Current: ${local.points || 0}, Required: ${pointsToDeduct}`,
+            };
+          }
+          const before = local.points || 0;
+          const after = before - pointsToDeduct;
+          local.points = after;
+          return { success: true, balanceBefore: before, balanceAfter: after };
+        }
+        return { success: false, balanceBefore: 0, balanceAfter: 0, message: 'User not found' };
+      }
+
+      const currentPoints = Number(userRow.points || 0);
+      if (currentPoints < pointsToDeduct) {
+        return {
+          success: false,
+          balanceBefore: currentPoints,
+          balanceAfter: currentPoints,
+          message: `Insufficient points. Current: ${currentPoints}, Required: ${pointsToDeduct}`,
+        };
+      }
+
+      const newPoints = currentPoints - pointsToDeduct;
+
+      const { data: updatedRow, error: updateErr } = await dbClient
+        .from('users')
+        .update({
+          points: newPoints,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+        .eq('points', currentPoints)
+        .select('*')
+        .single();
+
+      if (!updateErr && updatedRow) {
+        return {
+          success: true,
+          balanceBefore: currentPoints,
+          balanceAfter: Number(updatedRow.points),
+        };
+      }
+    }
+
+    return {
+      success: false,
+      balanceBefore: 0,
+      balanceAfter: 0,
+      message: 'Failed to deduct points due to high concurrency. Please try again.',
+    };
+  }
+
   // ===================== PROFILES =====================
   static async getProfile(userId: string): Promise<Profile | null> {
     try {
@@ -2868,9 +2942,13 @@ export class DatabaseService {
     };
   }
 
-  static async markNotificationRead(id: string): Promise<boolean> {
+  static async markNotificationRead(id: string, userId?: string): Promise<boolean> {
     const dbClient = getDbClient();
-    const { error } = await dbClient.from('notifications').update({ is_read: true }).eq('id', id);
+    let query = dbClient.from('notifications').update({ is_read: true }).eq('id', id);
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    const { error } = await query;
     return !error;
   }
 

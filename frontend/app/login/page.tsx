@@ -24,7 +24,7 @@ export default function LoginPage() {
     setIsLoading(false);
 
     if (res.success) {
-      if (res.user?.role === 'SUPER_ADMIN' || email.includes('admin@gmail.com') || email.includes('marcus.vance@solargrid.io')) {
+      if (res.user?.role === 'SUPER_ADMIN') {
         router.push('/admin');
       } else {
         router.push('/dashboard');
