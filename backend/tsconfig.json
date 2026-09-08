@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@/backend/*": ["./*"],
+      "@/backend/src/*": ["./src/*"],
+      "@/backend/db": ["./src/db/index"],
+      "@/backend/db/*": ["./src/db/*"],
+      "@/backend/auth/*": ["./src/auth/*"],
+      "@/backend/engines/*": ["./src/engines/*"],
+      "@/backend/security/*": ["./src/security/*"],
+      "@/backend/ml/*": ["./src/ml/*"],
+      "@/types": ["./src/types/index"],
+      "@/types/*": ["./src/types/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

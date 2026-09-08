@@ -1,0 +1,32 @@
+{
+  "name": "solargrid-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SolarGrid High-Performance Express API Engine for Render Deployment",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "seed-neon": "tsx ../scripts/migrate-neon.ts"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.0",
+    "jose": "^6.2.12",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^20.17.19",
+    "tsx": "^4.23.12",
+    "typescript": "^5.7.3"
+  }
+}
