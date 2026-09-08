@@ -237,6 +237,61 @@ router.post('/logout', (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/auth/forgot-password
+ */
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const clientIp = getClientIp(req);
+    if (checkRateLimit(clientIp, RATE_LIMIT_CONFIGS.passwordReset, res)) return;
+
+    const { email } = req.body || {};
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'A valid email address is required',
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await DatabaseService.getUserByEmail(cleanEmail);
+
+    if (user) {
+      await DatabaseService.addAuditLog({
+        actorId: user.id,
+        actorEmail: user.email,
+        actorRole: user.role,
+        action: 'PASSWORD_RESET_REQUESTED',
+        targetType: 'AUTH',
+        targetId: user.id,
+        details: { email: cleanEmail },
+        ipAddress: clientIp,
+      });
+
+      await DatabaseService.createNotification({
+        userId: user.id,
+        title: 'Password Reset Requested',
+        message: 'A request to reset your password was initiated. If this was not you, please secure your account immediately.',
+        type: 'SECURITY',
+        link: '/forgot-password',
+      });
+    }
+
+    // Return constant success to prevent account enumeration
+    return res.status(200).json({
+      success: true,
+      message: 'If an account exists for this email, password recovery instructions have been dispatched.',
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to process password recovery request.',
+    });
+  }
+});
+
+/**
  * GET /api/auth/me
  */
 router.get('/me', async (req: AuthenticatedRequest, res: Response) => {

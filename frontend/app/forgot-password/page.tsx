@@ -18,11 +18,18 @@ export default function ForgotPasswordPage() {
     setErrorMsg(null);
 
     try {
-      // Dispatched reset instructions for user email
-      await new Promise((r) => setTimeout(r, 600));
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to dispatch reset instructions.');
+      }
       setSubmitted(true);
-    } catch {
-      setErrorMsg('Failed to transmit password reset instructions. Please try again.');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to transmit password reset instructions. Please try again.');
     } finally {
       setLoading(false);
     }

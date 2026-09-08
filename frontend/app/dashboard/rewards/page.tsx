@@ -25,39 +25,59 @@ export default function RewardsPage() {
 
   const rewardVouchers = [
     {
-      id: 'voucher-fee-discount',
-      title: '5% Withdrawal Fee Discount Voucher',
+      id: 'rew-5usdt',
+      title: '5.00 USDT Energy Voucher',
       pointsCost: 50,
-      description: 'Applies a 50% discount to your next withdrawal fee (reduced from 10% to 5%).',
+      description: 'Direct cash credit deposited straight to your available balance in USDT.',
       icon: Zap,
     },
     {
-      id: 'voucher-daily-boost',
-      title: '+0.20 USDT Bonus Daily Yield',
-      pointsCost: 100,
-      description: 'Adds a bonus 0.20 USDT to your next completed 3-hour generation cycle.',
+      id: 'rew-20usdt',
+      title: '20.00 USDT Energy Voucher',
+      pointsCost: 180,
+      description: 'High-value balance credit deposited directly to your platform wallet.',
       icon: Sparkles,
     },
     {
-      id: 'voucher-vip-badge',
-      title: 'Solar Ambassador Community Badge',
-      pointsCost: 200,
-      description: 'Unlocks the VIP community ambassador status with priority customer desk routing.',
+      id: 'rew-booster',
+      title: 'Generation Efficiency Booster (+5%)',
+      pointsCost: 80,
+      description: 'Temporary +5% solar panel generation boost for 7 operational days.',
       icon: Award,
+    },
+    {
+      id: 'rew-vip-pass',
+      title: 'VIP Community Ambassador Pass',
+      pointsCost: 250,
+      description: 'Unlocks VIP community ambassador status with priority customer desk routing.',
+      icon: Shield,
     },
   ];
 
-  const handleRedeem = (voucher: typeof rewardVouchers[0]) => {
+  const handleRedeem = async (voucher: typeof rewardVouchers[0]) => {
     if (points < voucher.pointsCost) {
       error('Insufficient Points', `You need ${voucher.pointsCost} points to claim this reward.`);
       return;
     }
 
     setRedeemingId(voucher.id);
-    setTimeout(() => {
-      success('Reward Claimed!', `You have successfully redeemed ${voucher.title}.`);
+    try {
+      const res = await fetch('/api/points/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rewardId: voucher.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to redeem reward');
+      }
+      success('Reward Claimed!', data.message || `You have successfully redeemed ${voucher.title}.`);
+      await refreshUser();
+    } catch (err: any) {
+      error('Redemption Failed', err.message || 'Unable to process point redemption.');
+    } finally {
       setRedeemingId(null);
-    }, 600);
+    }
   };
 
   return (
