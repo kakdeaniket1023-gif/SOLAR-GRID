@@ -51,7 +51,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' blob: data: https://images.unsplash.com",
-              "connect-src 'self' http://localhost:5000 http://localhost:5055 http://127.0.0.1:5000 https://*.onrender.com https://*.solargrid.io",
+              "connect-src 'self' http://localhost:5000 http://localhost:5001 http://localhost:5055 http://127.0.0.1:5000 http://127.0.0.1:5001 https://*.onrender.com https://*.solargrid.io",
               "frame-ancestors 'none'",
             ].join('; '),
           },
