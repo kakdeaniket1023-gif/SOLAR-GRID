@@ -3,8 +3,15 @@ import { z } from 'zod';
 import { DatabaseService } from '@/backend/db';
 import { SolarGenerationService } from '@/backend/engines/solar-engine';
 import { requireAuthenticatedUser, requireSuperAdmin, requireUser, AuthenticatedRequest } from '@/backend/auth/guards';
+import { checkRateLimit, getClientIp } from '@/backend/security/rate-limiter';
 
 const router = Router();
+
+const PURCHASE_RATE_LIMIT = {
+  windowMs: 60 * 1000,
+  maxRequests: 10,
+  message: 'Too many solar plan purchase requests. Please wait a moment.',
+};
 
 const PurchaseSchema = z.object({
   planCode: z.string().min(1, 'Plan code is required'),
@@ -68,6 +75,11 @@ router.post('/plans', requireSuperAdmin, async (req: AuthenticatedRequest, res: 
  */
 router.post('/purchase', requireUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const clientIp = getClientIp(req);
+    if (checkRateLimit(clientIp, PURCHASE_RATE_LIMIT, res)) {
+      return;
+    }
+
     const user = req.user!;
     const parseResult = PurchaseSchema.safeParse(req.body);
 

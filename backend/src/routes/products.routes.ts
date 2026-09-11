@@ -1,9 +1,32 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { requireSuperAdmin, AuthenticatedRequest } from '@/backend/auth/guards';
 import { DatabaseService } from '@/backend/db';
 import { Product } from '@/types';
 
 const router = Router();
+
+const CreateProductSchema = z.object({
+  sku: z.string().min(1, 'SKU is required'),
+  name: z.string().min(1, 'Product name is required'),
+  description: z.string().optional().default(''),
+  retailPrice: z.number().positive('Retail price must be positive'),
+  commissionableValue: z.number().nonnegative('Commissionable value must be non-negative'),
+  category: z.string().optional().default('Solar Equipment'),
+  imageUrl: z.string().optional(),
+  isActive: z.boolean().optional().default(true),
+});
+
+const UpdateProductSchema = z.object({
+  sku: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  retailPrice: z.number().positive().optional(),
+  commissionableValue: z.number().nonnegative().optional(),
+  category: z.string().optional(),
+  imageUrl: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
 
 /**
  * GET /api/products
@@ -36,25 +59,24 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.post('/', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { sku, name, description, retailPrice, commissionableValue, category, imageUrl, isActive } = req.body || {};
-
-    if (!sku || !name || retailPrice === undefined || commissionableValue === undefined) {
+    const parsed = CreateProductSchema.safeParse(req.body);
+    if (!parsed.success) {
       return res.status(400).json({
         success: false,
-        error: 'BAD_REQUEST',
-        message: 'sku, name, retailPrice, and commissionableValue are required',
+        error: 'VALIDATION_ERROR',
+        message: parsed.error.errors[0]?.message || 'Invalid product data',
       });
     }
 
     const product = await DatabaseService.createProduct({
-      sku,
-      name,
-      description: description || '',
-      retailPrice: Number(retailPrice),
-      commissionableValue: Number(commissionableValue),
-      category: category || 'Solar Equipment',
-      imageUrl: imageUrl || undefined,
-      isActive: isActive !== undefined ? Boolean(isActive) : true,
+      sku: parsed.data.sku,
+      name: parsed.data.name,
+      description: parsed.data.description || '',
+      retailPrice: parsed.data.retailPrice,
+      commissionableValue: parsed.data.commissionableValue,
+      category: parsed.data.category,
+      imageUrl: parsed.data.imageUrl,
+      isActive: parsed.data.isActive,
     });
 
     if (!product) {
@@ -110,7 +132,16 @@ router.get('/:id', async (req: Request, res: Response) => {
  */
 router.put('/:id', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const updated = await DatabaseService.updateProduct(String(req.params.id), req.body || {});
+    const parsed = UpdateProductSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: parsed.error.errors[0]?.message || 'Invalid update parameters',
+      });
+    }
+
+    const updated = await DatabaseService.updateProduct(String(req.params.id), parsed.data);
     if (!updated) {
       return res.status(404).json({
         success: false,

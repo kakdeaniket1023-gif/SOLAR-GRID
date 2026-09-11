@@ -71,8 +71,8 @@ router.get('/tree', requireAuthenticatedUser, async (req: AuthenticatedRequest, 
       targetUserId = requestedUserId;
     }
 
-    const depth = depthParam ? parseInt(depthParam, 10) : 2;
-    const limit = limitParam ? parseInt(limitParam, 10) : 50;
+    const depth = depthParam ? Math.min(Math.max(parseInt(depthParam, 10) || 2, 1), 10) : 2;
+    const limit = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 50, 1), 100) : 50;
 
     const treeData = await TreeEngine.getTree(targetUserId, {
       depth,

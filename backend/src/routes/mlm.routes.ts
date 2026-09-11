@@ -34,7 +34,8 @@ router.get('/tree', requireUser, async (req: AuthenticatedRequest, res: Response
     const user = req.user!;
     const requestedUserId = req.query.userId as string | undefined;
     const searchQuery = (req.query.search as string | undefined)?.trim();
-    const depth = req.query.depth ? parseInt(req.query.depth as string, 10) : 4;
+    const rawDepth = req.query.depth ? parseInt(req.query.depth as string, 10) : 4;
+    const depth = isNaN(rawDepth) ? 4 : Math.min(Math.max(rawDepth, 1), 10);
 
     let targetUserId = user.id;
 

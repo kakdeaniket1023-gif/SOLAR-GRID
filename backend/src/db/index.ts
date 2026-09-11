@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { getDbClient, db } from './query-builder';
 import { sql } from './client';
 import { INITIAL_PLANS, INITIAL_PROJECTS } from '@/backend/db/seed-data';
@@ -3427,7 +3428,7 @@ export class DatabaseService {
   }): Promise<any> {
     try {
       const dbClient = getDbClient();
-      const token = sessionData.sessionToken || `tok_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+      const token = sessionData.sessionToken || `tok_${crypto.randomBytes(32).toString('hex')}`;
       const { data, error } = await dbClient
         .from('user_sessions')
         .insert({
